@@ -39,6 +39,7 @@ const State = {
   partnerName:   null,
   partnerUserId: null,
   roomUsers:     [],
+  myColor:       null,     // 'w' or 'b' — assigned when a game starts
   syncMusic:     true,     // whether to broadcast/receive music-sync
   _receiving:    false,    // guard against echo loops
 };
@@ -458,13 +459,20 @@ function renderBoard() {
   if (!el) return;
   el.innerHTML = '';
 
+  // Flip the board 180° for the black player
+  const flip = State.myColor === 'b';
+
   let checkKing = null;
   if (game.status === 'check' || game.status === 'checkmate') {
     checkKing = game._findKing(game.turn);
   }
 
-  for (let r = 0; r < 8; r++) {
-    for (let c = 0; c < 8; c++) {
+  for (let ri = 0; ri < 8; ri++) {
+    for (let ci = 0; ci < 8; ci++) {
+      // Map visual (ri, ci) → logical (r, c)
+      const r = flip ? 7 - ri : ri;
+      const c = flip ? 7 - ci : ci;
+
       const cell = mkEl('div', `chess-cell ${(r + c) % 2 === 0 ? 'light' : 'dark'}`);
       cell.dataset.r = r; cell.dataset.c = c;
 
@@ -483,8 +491,9 @@ function renderBoard() {
         cell.appendChild(mkEl('div', game.board[r][c] ? 'move-ring' : 'move-dot'));
       }
 
-      if (c === 0) cell.appendChild(mkEl('span', 'coord coord-rank', (8 - r).toString()));
-      if (r === 7) cell.appendChild(mkEl('span', 'coord coord-file', 'abcdefgh'[c]));
+      // Rank labels on left column, file labels on bottom row (visual)
+      if (ci === 0) cell.appendChild(mkEl('span', 'coord coord-rank', (8 - r).toString()));
+      if (ri === 7) cell.appendChild(mkEl('span', 'coord coord-file', 'abcdefgh'[c]));
 
       const piece = game.board[r][c];
       if (piece) {
@@ -502,6 +511,9 @@ function renderBoard() {
 
 function onCellClick(r, c) {
   if (game.status === 'checkmate' || game.status === 'stalemate' || game.status === 'draw') return;
+
+  // Enforce color: you may only move on your assigned color's turn
+  if (State.myColor && game.turn !== State.myColor) return;
 
   const piece = game.board[r][c];
 
@@ -543,9 +555,11 @@ function emitChessMove(mv) {
 }
 
 // Receive partner's move
-socket.on('chess-move', ({ fr, fc, tr, tc, promo, reset }) => {
+socket.on('chess-move', ({ fr, fc, tr, tc, promo, reset, partnerColor }) => {
   if (reset) {
     game.reset(); selectedSq = null; legalCache = [];
+    // Accept the color the initiator assigned to us
+    if (partnerColor) State.myColor = partnerColor;
     resetClocks(); renderBoard(); toast('♟ Partner started a new game!');
     return;
   }
@@ -642,18 +656,24 @@ function updatePlayerUI() {
   const topCard = $('player-top');
   const botCard = $('player-bottom');
   if (!topCard) return;
-  const whiteActive = game.turn === 'w';
-  botCard.classList.toggle('active-player', whiteActive);
-  topCard.classList.toggle('active-player', !whiteActive);
+
+  // "My" color: assigned color, or 'w' as default when solo
+  const mc = State.myColor || 'w';
+  const oc = mc === 'w' ? 'b' : 'w';
+  const isMyTurn = game.turn === mc;
+
+  botCard.classList.toggle('active-player', isMyTurn);
+  topCard.classList.toggle('active-player', !isMyTurn);
   const sTop = $('status-top');
   const sBot = $('status-bottom');
-  if (sTop) sTop.textContent = !whiteActive ? 'Thinking…' : 'Waiting…';
-  if (sBot) { sBot.textContent = whiteActive ? 'Your turn' : 'Waiting…'; sBot.className = `player-status${whiteActive?' thinking':''}`; }
+  if (sTop) sTop.textContent = !isMyTurn ? 'Thinking…' : 'Waiting…';
+  if (sBot) { sBot.textContent = isMyTurn ? 'Your turn' : 'Waiting…'; sBot.className = `player-status${isMyTurn ? ' thinking' : ''}`; }
 
-  const capByWhite = game.captured.w.map(p => SYMBOLS['b' + p.t] || '?').join('');
-  const capByBlack = game.captured.b.map(p => SYMBOLS['w' + p.t] || '?').join('');
-  const capBot = $('captured-bottom'); if (capBot) capBot.textContent = capByWhite;
-  const capTop = $('captured-top');   if (capTop) capTop.textContent = capByBlack;
+  // Show pieces I captured (opponent's pieces in my area) and vice versa
+  const capByMe  = game.captured[mc].map(p => SYMBOLS[oc + p.t] || '?').join('');
+  const capByOpp = game.captured[oc].map(p => SYMBOLS[mc + p.t] || '?').join('');
+  const capBot = $('captured-bottom'); if (capBot) capBot.textContent = capByMe;
+  const capTop = $('captured-top');   if (capTop) capTop.textContent = capByOpp;
 }
 
 function showPromoModal(color) {
@@ -677,26 +697,25 @@ document.querySelectorAll('.promo-btn').forEach(btn => {
 });
 
 $('btn-new-game')?.addEventListener('click', () => {
+  // Randomly assign colors — initiator picks their own, partner gets the other
+  const myColor = Math.random() < 0.5 ? 'w' : 'b';
+  State.myColor = myColor;
   game.reset(); selectedSq = null; legalCache = [];
   resetClocks();
+  // Tell partner their color along with the reset signal
+  socket.emit('chess-move', { reset: true, partnerColor: myColor === 'w' ? 'b' : 'w' });
   navigateTo('game');
+  renderBoard();
 });
 $('btn-reset-game')?.addEventListener('click', () => {
   if (confirm('Start a new game?')) {
+    const myColor = Math.random() < 0.5 ? 'w' : 'b';
+    State.myColor = myColor;
     game.reset(); selectedSq = null; legalCache = [];
     resetClocks();
-    socket.emit('chess-move', { reset: true });
+    socket.emit('chess-move', { reset: true, partnerColor: myColor === 'w' ? 'b' : 'w' });
     renderBoard(); toast('♟ New game started!');
   }
-});
-$('btn-undo-move')?.addEventListener('click', () => {
-  if (!game.history.length) { toast('Nothing to undo'); return; }
-  const hist = [...game.history];
-  hist.pop();
-  game.reset();
-  for (const h of hist) game.move(h.fr, h.fc, h.tr, h.tc, h.piece?.promo);
-  selectedSq = null; legalCache = [];
-  renderBoard(); toast('↩ Undone');
 });
 
 /* ── Resign ── */
