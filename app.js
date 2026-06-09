@@ -10,17 +10,17 @@
 const game  = new ChessGame();
 const music = new MusicPlayer();
 
-// Socket.IO – connects back to our Express server (safe-guard if server is offline)
+// Socket.IO – on Vercel: connect to Render backend. On localhost: same origin.
 let socket;
 try {
-  socket = io({ autoConnect: false });
+  const _backendUrl = (typeof RENDER_URL !== 'undefined' && RENDER_URL && location.hostname !== 'localhost')
+    ? RENDER_URL : '';
+  socket = _backendUrl
+    ? io(_backendUrl, { autoConnect: false, transports: ['websocket', 'polling'] })
+    : io({ autoConnect: false });
 } catch(e) {
-  // io not available (server offline / script not loaded) — create a no-op stub
   const noop = () => {};
-  socket = {
-    connect: noop, emit: noop, on: noop, disconnect: noop,
-    connected: false, id: null,
-  };
+  socket = { connect: noop, emit: noop, on: noop, disconnect: noop, connected: false, id: null };
 }
 
 const State = {
