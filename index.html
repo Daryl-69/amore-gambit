@@ -475,7 +475,15 @@
   </div>
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
+<script>
+  /* ── Load socket.io client from wherever the backend lives ── */
+  const RENDER_URL = '';  /* ← PASTE YOUR RENDER URL HERE after deploying, e.g.:
+                              'https://amore-gambit.onrender.com'              */
+  const _sioSrc = (RENDER_URL && location.hostname !== 'localhost')
+    ? RENDER_URL + '/socket.io/socket.io.js'
+    : '/socket.io/socket.io.js';
+  document.write('<script src="' + _sioSrc + '"><\/script>');
+</script>
 <script src="chess.js"></script>
 <script src="music.js"></script>
 <script src="app.js"></script>
