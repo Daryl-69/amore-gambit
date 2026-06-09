@@ -1,6 +1,6 @@
 'use strict';
 /* ══════════════════════════════════════════════════════════════════════
-   app.js – Amore & Gambit  (main coordinator)
+   app.js – Amore & Gambit  (main coordinator)  v2 – color assignment
    Requires: chess.js · music.js · socket.io (from server)
 ══════════════════════════════════════════════════════════════════════ */
 
