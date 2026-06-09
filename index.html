@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Amore &amp; Gambit – A Chess Experience for Two</title>
+  <meta name="description" content="A romantic chess + music experience for two. Real-time shared board and music queue." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ══════════════ NAME PROMPT (shown on first visit) ══════════════ -->
+<div id="name-prompt-overlay" class="name-prompt-overlay">
+  <div class="name-prompt-card">
+    <div class="name-prompt-heart">♥</div>
+    <h1 class="name-prompt-title">Amore &amp; Gambit</h1>
+    <p class="name-prompt-sub">A chess experience for two</p>
+    <div class="name-prompt-body">
+      <label class="name-label" for="name-input">What shall we call you?</label>
+      <input type="text" id="name-input" class="name-input" placeholder="Your name…" maxlength="24" autocomplete="name" autocapitalize="words" />
+      <button class="btn-primary name-submit-btn" id="btn-save-name">Continue →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ NAV ══════════════ -->
+<nav class="nav" id="main-nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-brand" id="nav-brand-link">
+      <span class="nav-brand-icon">♥</span>
+      <span class="nav-brand-text">Amore &amp; Gambit</span>
+    </a>
+
+    <!-- Room badge -->
+    <div class="room-badge" id="room-badge" title="Your room code">
+      <span class="room-badge-label">ROOM</span>
+      <span class="room-badge-code" id="room-code-display">—</span>
+      <button class="room-copy-btn" id="btn-copy-room" aria-label="Copy room code">📋</button>
+    </div>
+
+    <!-- Partner status -->
+    <div class="partner-badge" id="partner-badge">
+      <span class="partner-dot" id="partner-dot"></span>
+      <span class="partner-name" id="partner-name-nav">Waiting for partner…</span>
+    </div>
+
+    <div class="nav-links" id="nav-links">
+      <a href="#" class="nav-link" data-page="lobby">Lobby</a>
+      <a href="#" class="nav-link" data-page="game">Game</a>
+      <a href="#" class="nav-link" data-page="music">Music</a>
+      <a href="#" class="nav-link active" data-page="settings">Settings</a>
+    </div>
+    <button class="hamburger" id="hamburger" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-drawer" id="mobile-drawer">
+    <div class="drawer-room-info">
+      <div class="drawer-room-row">
+        <span class="drawer-room-label">Room Code:</span>
+        <strong id="drawer-room-code">—</strong>
+        <button class="room-copy-btn" data-copy-room aria-label="Copy">📋</button>
+      </div>
+      <div class="drawer-partner-row" id="drawer-partner-row">
+        <span class="partner-dot" id="drawer-partner-dot"></span>
+        <span id="drawer-partner-name">Waiting for partner…</span>
+      </div>
+    </div>
+    <a href="#" class="drawer-link" data-page="lobby">⚔ Lobby</a>
+    <a href="#" class="drawer-link" data-page="game">♟ Game</a>
+    <a href="#" class="drawer-link" data-page="music">♫ Music</a>
+    <a href="#" class="drawer-link" data-page="settings">⚙ Settings</a>
+  </div>
+</nav>
+
+<!-- ══════════════ PAGES ══════════════ -->
+<main class="main-content" id="main-content">
+
+  <!-- ── LOBBY ── -->
+  <section class="page hidden" id="page-lobby">
+    <div class="lobby-layout">
+      <div class="lobby-hero-card">
+        <div class="lobby-chess-icon">♟</div>
+        <h2 class="lobby-tagline">Ready for a match?</h2>
+        <p class="lobby-sub">Challenge your partner to a cozy evening game.</p>
+        <button class="btn-primary" id="btn-new-game">▶ New Game</button>
+      </div>
+      <div class="lobby-right">
+        <div class="stats-row">
+          <div class="stat-card stat-your">
+            <div class="stat-label">🏆 YOUR WINS</div>
+            <div class="stat-number" id="stat-my-wins">0</div>
+            <div class="stat-unit">games</div>
+          </div>
+          <div class="stat-card stat-partner">
+            <div class="stat-label">💕 PARTNER'S WINS</div>
+            <div class="stat-number" id="stat-partner-wins">0</div>
+            <div class="stat-unit">games</div>
+          </div>
+        </div>
+        <div class="streak-bar">
+          <div class="streak-label">WIN RATE</div>
+          <div class="streak-value" id="stat-winrate">—</div>
+          <span class="streak-icon-btn">♥</span>
+        </div>
+        <div class="matches-section">
+          <div class="matches-header">
+            <h3>Recent Games</h3>
+          </div>
+          <div class="match-list" id="recent-matches">
+            <div class="match-empty">No games yet — play your first match! ♟</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── GAME ── -->
+  <section class="page hidden" id="page-game">
+    <div class="game-layout">
+
+      <!-- Status bar -->
+      <div class="game-status-bar">
+        <div id="game-status-icon" class="status-icon">♟</div>
+        <span id="game-status-text" class="game-status-text status-playing">White's turn</span>
+        <div class="game-status-actions">
+          <button id="btn-undo-move"  class="btn-game-action" title="Undo last move">↩ Undo</button>
+          <button id="btn-request-draw" class="btn-game-action btn-draw" title="Offer a draw">🤝 Draw</button>
+          <button id="btn-resign"     class="btn-game-action btn-resign" title="Resign">🏳 Resign</button>
+          <button id="btn-reset-game" class="btn-game-action btn-reset" title="New game">↺ New Game</button>
+        </div>
+      </div>
+
+      <!-- Top player (Black) -->
+      <div class="game-player game-player-top" id="player-top">
+        <div class="player-avatar-wrap">
+          <img src="https://i.pravatar.cc/44?img=47" alt="Partner" class="player-avatar" id="avatar-partner" />
+        </div>
+        <div class="player-details">
+          <span class="player-name-colored" id="label-partner">Partner</span>
+          <span class="player-status" id="status-top">Waiting…</span>
+        </div>
+        <div class="player-captured" id="captured-top"></div>
+        <div class="player-clock" id="clock-top">10:00</div>
+      </div>
+
+      <!-- Board + sidebar -->
+      <div class="game-main">
+        <div class="board-wrap">
+          <div class="chess-board" id="chess-board"></div>
+        </div>
+
+        <!-- Game music sidebar -->
+        <aside class="game-music-sidebar">
+          <div class="shared-room-header">
+            <span class="shared-room-icon">♫</span>
+            <span class="shared-room-title">Shared Room</span>
+            <button class="btn-add-song icon-btn ml-auto" aria-label="Add song" title="Add song to queue">+ Add</button>
+          </div>
+          <div class="now-playing-art">
+            <img id="sidebar-thumb" src="https://images.unsplash.com/photo-1461784180009-27c171404c87?w=400&q=80" alt="Now Playing" class="now-playing-img" />
+            <div class="np-overlay">
+              <div class="np-title" id="sidebar-title">No song playing</div>
+              <div class="np-artist" id="sidebar-artist">Add music to get started</div>
+            </div>
+          </div>
+          <div class="progress-section">
+            <div class="progress-bar-track" id="sidebar-progress-track">
+              <div class="progress-bar-fill" id="sidebar-progress-fill" style="width:0%"></div>
+            </div>
+            <div class="progress-times">
+              <span id="sidebar-cur">0:00</span>
+              <span id="sidebar-dur">0:00</span>
+            </div>
+          </div>
+          <div class="player-controls">
+            <button class="ctrl-btn" data-ctrl="prev" aria-label="Previous">⏮</button>
+            <button class="ctrl-btn ctrl-play" data-ctrl="play" aria-label="Play/Pause" id="sidebar-play-btn">▶</button>
+            <button class="ctrl-btn" data-ctrl="next" aria-label="Next">⏭</button>
+          </div>
+          <div class="up-next-section" id="sidebar-queue">
+            <div class="up-next-label">Up Next</div>
+          </div>
+        </aside>
+      </div>
+
+      <!-- Bottom player (White / You) -->
+      <div class="game-player game-player-bottom" id="player-bottom">
+        <div class="player-avatar-wrap avatar-you">
+          <span class="avatar-letter" id="avatar-letter-me">Y</span>
+        </div>
+        <div class="player-details">
+          <span class="player-name" id="label-me">You</span>
+          <span class="player-status thinking" id="status-bottom">Your turn</span>
+        </div>
+        <div class="player-captured" id="captured-bottom"></div>
+        <div class="player-clock" id="clock-bottom">10:00</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── MUSIC ── -->
+  <section class="page hidden" id="page-music">
+    <div class="music-layout">
+
+      <!-- Left: mini player + discovery -->
+      <div class="music-discovery">
+        <div class="music-page-header">
+          <h2 class="music-page-title">Music Room</h2>
+          <button class="btn-add-song btn-primary" id="btn-add-song-main" aria-label="Add song">+ Add Song</button>
+        </div>
+
+        <div class="music-search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="music-search" id="music-browse-search" placeholder="Filter queue…" />
+        </div>
+
+        <div class="music-section-header">
+          <h3>Featured Picks</h3>
+        </div>
+        <div class="album-grid">
+          <div class="album-card" data-ytid="4Tr0otuiQuU">
+            <img src="https://img.youtube.com/vi/4Tr0otuiQuU/mqdefault.jpg" alt="Clair de Lune" class="album-art" />
+            <div class="album-title">Clair de Lune</div>
+            <div class="album-artist">Debussy</div>
+          </div>
+          <div class="album-card" data-ytid="nDn8_bpCGMw">
+            <img src="https://img.youtube.com/vi/nDn8_bpCGMw/mqdefault.jpg" alt="Gymnopédie" class="album-art" />
+            <div class="album-title">Gymnopédie No. 1</div>
+            <div class="album-artist">Erik Satie</div>
+          </div>
+          <div class="album-card" data-ytid="mhOd6HXQqo0">
+            <img src="https://img.youtube.com/vi/mhOd6HXQqo0/mqdefault.jpg" alt="Cello Suite" class="album-art" />
+            <div class="album-title">Cello Suite No. 1</div>
+            <div class="album-artist">J.S. Bach</div>
+          </div>
+          <div class="album-card" data-ytid="KQOVMeJKy3Y">
+            <img src="https://img.youtube.com/vi/KQOVMeJKy3Y/mqdefault.jpg" alt="Chopin" class="album-art" />
+            <div class="album-title">Nocturne Op. 9 No. 2</div>
+            <div class="album-artist">Chopin</div>
+          </div>
+          <div class="album-card" data-ytid="7OvkLTbK2rE">
+            <img src="https://img.youtube.com/vi/7OvkLTbK2rE/mqdefault.jpg" alt="Moonlight Sonata" class="album-art" />
+            <div class="album-title">Moonlight Sonata</div>
+            <div class="album-artist">Beethoven</div>
+          </div>
+          <div class="album-card" data-ytid="R7kFJFpFPSg">
+            <img src="https://img.youtube.com/vi/R7kFJFpFPSg/mqdefault.jpg" alt="Lo-fi" class="album-art" />
+            <div class="album-title">Lo-fi Chill Beats</div>
+            <div class="album-artist">Study &amp; Relax</div>
+          </div>
+        </div>
+
+        <!-- Mini player bar -->
+        <div class="mini-player">
+          <img id="mini-thumb" src="https://images.unsplash.com/photo-1461784180009-27c171404c87?w=60&q=80" alt="Now Playing" class="mini-thumb" />
+          <div class="mini-info">
+            <div class="mini-title" id="mini-title">No song playing</div>
+            <div class="mini-artist" id="mini-artist">Add a song to get started</div>
+            <div class="mini-progress">
+              <span class="mini-time" id="mini-cur">0:00</span>
+              <div class="mini-bar" id="mini-bar-track">
+                <div class="mini-fill" id="mini-fill" style="width:0%"></div>
+              </div>
+              <span class="mini-time" id="mini-dur">0:00</span>
+            </div>
+          </div>
+          <div class="mini-controls">
+            <button class="ctrl-btn sm" data-ctrl="prev" aria-label="Previous">⏮</button>
+            <button class="ctrl-btn sm ctrl-play" data-ctrl="play" aria-label="Play" id="mini-play-btn">▶</button>
+            <button class="ctrl-btn sm" data-ctrl="next" aria-label="Next">⏭</button>
+          </div>
+          <div class="volume-wrap">
+            <span class="vol-icon">🔊</span>
+            <input type="range" id="vol-slider" min="0" max="100" value="75" class="vol-slider" aria-label="Volume" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: shared queue -->
+      <div class="music-queue-panel">
+        <div class="queue-header">
+          <h3>Shared Queue <span class="queue-live-dot">●</span></h3>
+          <button class="btn-add-song icon-btn" aria-label="Add to queue" title="Add song">＋</button>
+        </div>
+        <div id="music-queue-list" class="music-queue-list">
+          <div class="queue-empty">
+            <strong>Queue is empty</strong><br/>
+            Click <strong>+ Add Song</strong> to add music from<br/>
+            YouTube, YouTube Music, or Spotify
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── SETTINGS ── -->
+  <section class="page" id="page-settings">
+    <div class="settings-layout">
+      <div class="settings-left">
+
+        <div class="profile-card">
+          <h3 class="profile-card-title">Our Profile</h3>
+          <div class="profile-avatars">
+            <div class="profile-avatar-wrap">
+              <div class="profile-avatar-letter" id="profile-letter">?</div>
+            </div>
+          </div>
+          <div class="profile-names" id="profile-display-name">Loading…</div>
+          <div class="profile-connected" id="profile-connected-label">Partner not connected</div>
+          <button class="btn-outline" id="btn-change-name">✏️ Change Name</button>
+        </div>
+
+        <!-- Room card -->
+        <div class="room-card">
+          <h3 class="prefs-title">Room</h3>
+          <div class="room-code-display">
+            <span class="room-code-big" id="settings-room-code">—</span>
+            <button class="room-copy-btn big-copy" id="btn-copy-room-settings" aria-label="Copy room code">📋 Copy</button>
+          </div>
+          <p class="room-hint">Share this code with your partner so they can join your room and hear your music live.</p>
+          <div class="room-join-row">
+            <input type="text" id="join-code-input" class="modal-input" placeholder="Enter partner's code…" maxlength="8" autocapitalize="characters" />
+            <button class="btn-primary" id="btn-join-room-settings">Join</button>
+          </div>
+          <div class="room-users-list" id="room-users-list">
+            <div class="room-user-empty">No one else in the room yet.</div>
+          </div>
+        </div>
+
+        <div class="prefs-card">
+          <h3 class="prefs-title">Preferences</h3>
+          <div class="pref-group">
+            <label class="pref-label">Board Theme</label>
+            <div class="theme-toggle" id="theme-toggle">
+              <button class="theme-btn active" data-theme="ivory">Classic Ivory</button>
+              <button class="theme-btn" data-theme="rose">Midnight Rose</button>
+            </div>
+          </div>
+          <div class="pref-row">
+            <span class="pref-icon">♪</span>
+            <span class="pref-name">Music Sync</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-music-sync" checked />
+              <span class="toggle-thumb"></span>
+            </label>
+          </div>
+          <div class="pref-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px;width:100%">
+              <span class="pref-icon">🔑</span>
+              <span class="pref-name">Google Client ID</span>
+            </div>
+            <div style="display:flex;gap:6px;width:100%">
+              <input type="text" id="google-client-id-input" class="modal-input" style="font-size:12px;padding:8px 10px;margin:0;flex:1" placeholder="paste your OAuth client ID…" autocomplete="off" />
+              <button class="btn-small-action" id="btn-save-google-id">Save</button>
+            </div>
+            <p style="font-size:10px;color:var(--text-pale);line-height:1.5">Get one at <a href="https://console.cloud.google.com/" target="_blank" style="color:var(--rose)">Google Cloud Console</a> → Credentials → OAuth 2.0 Client ID</p>
+          </div>
+
+        </div>
+
+      </div>
+      <div class="settings-right">
+        <div class="history-header">
+          <h2 class="history-title">Game History</h2>
+          <div class="win-rate"><span class="win-dot">●</span> <span id="win-rate-label">—</span></div>
+        </div>
+        <div class="history-list" id="history-list">
+          <div class="queue-empty">No games recorded yet. Play a game to see history here!</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ══════════════ BOTTOM NAV (mobile) ══════════════ -->
+<nav class="bottom-nav" id="bottom-nav">
+  <button class="bottom-nav-btn" data-page="lobby"><span class="bnav-icon">⚔</span><span class="bnav-label">Lobby</span></button>
+  <button class="bottom-nav-btn" data-page="game"><span class="bnav-icon">♟</span><span class="bnav-label">Game</span></button>
+  <button class="bottom-nav-btn" data-page="music"><span class="bnav-icon">♫</span><span class="bnav-label">Music</span></button>
+  <button class="bottom-nav-btn active" data-page="settings"><span class="bnav-icon">⚙</span><span class="bnav-label">Settings</span></button>
+</nav>
+
+<!-- ══════════════ HIDDEN YOUTUBE PLAYER ══════════════ -->
+<div id="yt-player-container" style="position:fixed;width:200px;height:150px;bottom:0;right:0;opacity:0;pointer-events:none;" aria-hidden="true">
+  <div id="yt-hidden-player"></div>
+</div>
+
+<!-- ══════════════ PROMOTION MODAL ══════════════ -->
+<div class="modal-overlay hidden" id="promo-modal" role="dialog" aria-modal="true" aria-labelledby="promo-title">
+  <div class="modal-card promo-card">
+    <h3 id="promo-title" class="modal-title">Promote Pawn ♟</h3>
+    <p class="modal-sub">Choose a piece for your pawn</p>
+    <div class="promo-choices">
+      <button class="promo-btn" data-piece="Q" aria-label="Promote to Queen"><span class="promo-piece">♕</span><span class="promo-name">Queen</span></button>
+      <button class="promo-btn" data-piece="R" aria-label="Promote to Rook"><span class="promo-piece">♖</span><span class="promo-name">Rook</span></button>
+      <button class="promo-btn" data-piece="B" aria-label="Promote to Bishop"><span class="promo-piece">♗</span><span class="promo-name">Bishop</span></button>
+      <button class="promo-btn" data-piece="N" aria-label="Promote to Knight"><span class="promo-piece">♘</span><span class="promo-name">Knight</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ ADD SONG MODAL ══════════════ -->
+<div class="modal-overlay hidden" id="add-song-modal" role="dialog" aria-modal="true" aria-labelledby="add-song-title">
+  <div class="modal-card add-song-card">
+    <div class="modal-header">
+      <h3 id="add-song-title" class="modal-title">Add Music 🎵</h3>
+      <button class="modal-close" id="close-add-song" aria-label="Close">✕</button>
+    </div>
+    <div class="add-song-tabs" role="tablist">
+      <button class="song-tab active" data-tab="search" role="tab" aria-selected="true">🔍 Search</button>
+      <button class="song-tab" data-tab="url" role="tab" aria-selected="false">🔗 Paste URL</button>
+    </div>
+    <div class="add-song-body">
+
+      <!-- Search tab -->
+      <div class="song-tab-panel" id="tab-search" role="tabpanel">
+        <div class="modal-search-row">
+          <input type="text" id="song-search-input" class="modal-input" placeholder="Search YouTube for songs, artists…" autocomplete="off" />
+          <button class="search-go-btn" id="btn-song-search">Search</button>
+        </div>
+        <div id="search-results" class="search-results-list">
+          <div class="search-msg">Type something and press Search ↑</div>
+        </div>
+      </div>
+
+      <!-- URL tab -->
+      <div class="song-tab-panel hidden" id="tab-url" role="tabpanel">
+        <p class="modal-hint">Paste a <strong>YouTube</strong>, <strong>YouTube Music</strong>, or <strong>Spotify</strong> URL below.</p>
+        <input type="url" id="song-url-input" class="modal-input" placeholder="https://youtu.be/… or https://open.spotify.com/track/…" autocomplete="off" />
+        <div class="modal-hint source-chips">
+          <span class="chip">▶ YouTube</span>
+          <span class="chip">🎵 YT Music</span>
+          <span class="chip">🟢 Spotify</span>
+        </div>
+        <button class="btn-primary full-w" id="btn-add-url">Add to Queue</button>
+        <div id="url-status" class="url-status"></div>
+      </div>
+
+
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ DRAW OFFER MODAL ══════════════ -->
+<div class="modal-overlay hidden" id="draw-offer-modal" role="dialog" aria-modal="true" aria-labelledby="draw-offer-title">
+  <div class="modal-card" style="max-width:340px;text-align:center">
+    <div style="font-size:48px;margin-bottom:10px">🤝</div>
+    <h3 id="draw-offer-title" class="modal-title">Draw Offered</h3>
+    <p class="modal-sub" style="margin:10px 0 20px" id="draw-offer-msg">Your partner is offering a draw. Accept?</p>
+    <div style="display:flex;gap:10px">
+      <button class="btn-outline" id="btn-decline-draw" style="flex:1">Decline</button>
+      <button class="btn-primary" id="btn-accept-draw" style="flex:1">Accept Draw</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ CHANGE NAME MODAL ══════════════ -->
+<div class="modal-overlay hidden" id="change-name-modal" role="dialog" aria-modal="true" aria-labelledby="change-name-title">
+  <div class="modal-card" style="max-width:360px">
+    <h3 id="change-name-title" class="modal-title">Change Your Name</h3>
+    <p class="modal-sub" style="margin-bottom:14px">This name is permanent and synced to your room.</p>
+    <input type="text" id="change-name-input" class="modal-input" placeholder="Your name…" maxlength="24" />
+    <div style="display:flex;gap:10px;margin-top:12px">
+      <button class="btn-outline" id="btn-cancel-rename" style="flex:1">Cancel</button>
+      <button class="btn-primary" id="btn-confirm-rename" style="flex:1">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="chess.js"></script>
+<script src="music.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
