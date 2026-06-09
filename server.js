@@ -32,6 +32,9 @@ app.use(express.static(__dirname));
    REST API
 ══════════════════════════════════════════ */
 
+/* ── Keep-alive ping — prevents Render free tier from spinning down ── */
+app.get('/ping', (req, res) => res.json({ ok: true, ts: Date.now() }));
+
 /* -- Game History -- */
 app.get('/api/history', (req, res) => res.json(db.history));
 

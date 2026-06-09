@@ -23,6 +23,15 @@ try {
   socket = { connect: noop, emit: noop, on: noop, disconnect: noop, connected: false, id: null };
 }
 
+/* ── Keep Render awake: ping every 4.5 min (Render spins down after 5 min idle) ──
+   Only runs on Vercel (not localhost) to avoid noise during development.        */
+if (typeof RENDER_URL !== 'undefined' && RENDER_URL && location.hostname !== 'localhost') {
+  const _keepAlive = () =>
+    fetch(RENDER_URL + '/ping').catch(() => {});  // fire-and-forget; ignore errors
+  setInterval(_keepAlive, 4.5 * 60 * 1000);      // every 4 min 30 sec
+  _keepAlive();                                   // ping immediately on page load
+}
+
 const State = {
   userId:        getUserId(),
   userName:      localStorage.getItem('ag_name') || '',
